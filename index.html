@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>퍼즐 샘플</title>
+<style>
+  :root { --bg:#f6f1ec; --ink:#5b4a44; --card:#fff; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;
+    -webkit-user-select:none; user-select:none; overscroll-behavior:none; }
+  .wrap { max-width:520px; margin:0 auto; padding:calc(env(safe-area-inset-top) + 16px) 16px 24px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  h1 { font-size:20px; margin:0; }
+  .lives { font-size:22px; letter-spacing:2px; }
+  .rules { font-size:13px; background:var(--card); border-radius:12px; padding:10px 12px; margin-bottom:14px; line-height:1.5; }
+  .board { display:grid; gap:3px; background:var(--card); padding:6px; border-radius:14px; touch-action:manipulation; }
+  .cell { aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-size:min(6vw,30px); font-weight:800; color:#fff; touch-action:manipulation; }
+  .cell.x::after { content:"✕"; }
+  .cell.cat::after { content:"🐱"; font-size:min(7vw,32px); }
+  .cell.cat { animation:pop .35s ease-out; }
+  .cell.wrong { animation:shake .4s; background:#e04848 !important; }
+  @keyframes pop { 0%{transform:scale(.3)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .meta { display:flex; justify-content:space-between; font-size:13px; margin-top:10px; opacity:.8; }
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:24px; }
+  .modal.show { display:flex; }
+  .box { background:#fff; border-radius:18px; padding:22px; width:100%; max-width:360px; text-align:center; }
+  .box h2 { margin:0 0 8px; font-size:20px; }
+  .box p { margin:0 0 16px; line-height:1.5; }
+  button { font:inherit; border:0; border-radius:12px; padding:12px 20px; background:#8a6b5f; color:#fff; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>🔍 샘플 퍼즐</h1><div class="lives" id="lives"></div></header>
+  <div class="rules">한 번 탭하면 ✕ 표시, 두 번 탭하면 고양이를 놓아요.<br>가로줄·세로줄·색깔마다 고양이는 1마리, 고양이끼리는 대각선까지 붙으면 안 돼요.</div>
+  <div class="board" id="board"></div>
+  <div class="meta"><span id="found"></span><span id="timer">00:00</span></div>
+</div>
+<div class="modal" id="modal"><div class="box"><h2 id="mt"></h2><p id="mb"></p><button id="mok">확인</button></div></div>
+<script>
+const P = {"n": 9, "regions": [[3, 0, 0, 0, 0, 1, 1, 2, 2], [3, 0, 1, 1, 1, 1, 2, 2, 2], [3, 3, 2, 2, 1, 2, 2, 2, 2], [3, 2, 2, 2, 2, 2, 2, 2, 2], [3, 3, 3, 5, 5, 2, 5, 4, 2], [3, 3, 5, 5, 5, 5, 5, 4, 2], [3, 3, 3, 5, 5, 6, 6, 4, 4], [8, 7, 7, 7, 5, 6, 4, 4, 4], [8, 8, 8, 7, 7, 6, 6, 6, 4]], "solution": [2, 5, 8, 0, 7, 4, 6, 3, 1]};
+const LIVES = 3;
+const COLORS = ["#e8a6c4","#5f78b4","#f0a96f","#9a7fd0","#a8784f","#e0bf5c","#63b3ad","#a9bdd8","#9ccb86","#d98b8b"];
+const MISSIONS = Array.from({length:P.n}, (_, i) => ({ t:`미션 ${i+1}`, b:`(샘플) 여기에 ${i+1}번째 미션 문구가 들어가요.` }));
+const n = P.n, board = document.getElementById('board');
+let state, lives, found, t0, timerId, over;
+board.style.gridTemplateColumns = `repeat(${n},1fr)`;
+const cells = [];
+for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+  const d = document.createElement('div');
+  d.className = 'cell'; d.style.background = COLORS[P.regions[r][c]];
+  d.dataset.r = r; d.dataset.c = c;
+  board.appendChild(d); cells.push(d);
+}
+function reset() {
+  state = Array.from({length:n}, () => Array(n).fill(0)); // 0 empty, 1 x, 2 cat
+  lives = LIVES; found = 0; over = false;
+  cells.forEach(d => d.classList.remove('x','cat','wrong'));
+  t0 = Date.now(); clearInterval(timerId);
+  timerId = setInterval(() => {
+    const s = Math.floor((Date.now()-t0)/1000);
+    document.getElementById('timer').textContent = String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  }, 1000);
+  render();
+}
+function render() {
+  document.getElementById('lives').textContent = '❤️'.repeat(lives) + '🤍'.repeat(LIVES-lives);
+  document.getElementById('found').textContent = `찾은 고양이 ${found} / ${n}`;
+}
+function el(r,c){ return cells[r*n+c]; }
+function showModal(t, b, cb) {
+  document.getElementById('mt').textContent = t;
+  document.getElementById('mb').textContent = b;
+  const m = document.getElementById('modal'); m.classList.add('show');
+  document.getElementById('mok').onclick = () => { m.classList.remove('show'); cb && cb(); };
+}
+function toggleX(r,c) {
+  if (state[r][c] === 2) return;
+  state[r][c] = state[r][c] ? 0 : 1;
+  el(r,c).classList.toggle('x', state[r][c] === 1);
+}
+function placeCat(r,c) {
+  if (state[r][c] === 2) return;
+  const d = el(r,c);
+  if (P.solution[r] === c) {
+    state[r][c] = 2; d.classList.remove('x'); d.classList.add('cat'); found++; render();
+    const m = MISSIONS[found-1];
+    setTimeout(() => showModal('🐱 ' + m.t, m.b, () => {
+      if (found === n) { clearInterval(timerId); showModal('🎉 완료!', `걸린 시간 ${document.getElementById('timer').textContent}`); }
+    }), 350);
+  } else {
+    state[r][c] = 0; d.classList.remove('x');
+    d.classList.remove('wrong'); void d.offsetWidth; d.classList.add('wrong');
+    setTimeout(() => d.classList.remove('wrong'), 450);
+    lives--; render();
+    if (lives <= 0) { over = true; clearInterval(timerId); setTimeout(() => showModal('💔 목숨을 다 썼어요', '처음부터 다시 해볼까요?', reset), 450); }
+  }
+}
+// single tap = X immediately; second tap within 300ms on same cell = undo X & place cat
+let last = { t:0, r:-1, c:-1 };
+board.addEventListener('pointerup', e => {
+  const d = e.target.closest('.cell'); if (!d || over) return;
+  e.preventDefault();
+  const r = +d.dataset.r, c = +d.dataset.c, now = Date.now();
+  if (now - last.t < 300 && last.r === r && last.c === c) {
+    toggleX(r,c); // undo the first tap's toggle
+    placeCat(r,c);
+    last = { t:0, r:-1, c:-1 };
+  } else {
+    toggleX(r,c);
+    last = { t:now, r, c };
+  }
+});
+document.addEventListener('dblclick', e => e.preventDefault());
+document.addEventListener('gesturestart', e => e.preventDefault());
+reset();
+</script>
+</body>
+</html>
