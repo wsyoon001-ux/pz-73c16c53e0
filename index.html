@@ -148,6 +148,7 @@
   <div class="lobbyHead"><h2>🎂 생일 모험</h2><p id="lSub"></p></div>
   <div class="slots" id="slots"></div>
   <button class="wide" id="lGo">이어서 하기 →</button>
+  <button class="wide ghost" id="lTut" style="margin-top:10px">튜토리얼 다시 보기</button>
   <button class="wide dev" id="lReset" style="margin-top:10px">처음부터 (개발용)</button>
 </div>
 
@@ -174,7 +175,7 @@ const BOARDS_PER_MISSION = 2;
 const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = 'e7aa1b99b5f54dccf3b330e39d0a4744';
+const SALT = '5074f5214942a25ab153f2bc95a519e5';
 const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
   'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg' };
 const URLS = {};
@@ -256,17 +257,21 @@ function toast(msg, ms = 1000) {
 // ============================================================
 // 인트로
 // ============================================================
-function renderIntro() {
-  const it = INTRO[S.intro];
+// review = 로비에서 다시 보기 (진행 상태는 안 건드림)
+function renderIntro(review) {
+  const k = review ? INTRO.length - 1 : S.intro, it = INTRO[k];
   $('introCard').innerHTML =
     (it.face ? '<div style="font-size:64px;margin-bottom:10px">🐱</div>' : '') +
     `<h1>${esc(it.title)}</h1><p class="pre">${esc(it.text)}</p>` +
     (it.small ? `<p class="small">${esc(it.small)}</p>` : '') +
-    `<button class="wide" id="iBtn">${esc(it.btn)}</button>`;
+    `<button class="wide" id="iBtn">${review ? '로비로' : esc(it.btn)}</button>` +
+    (!review && k > 0 ? '<button class="wide ghost" id="iPrev" style="margin-top:8px">← 이전</button>' : '');
   $('iBtn').onclick = () => {
+    if (review) { goLobby(); return; }
     S.intro++; save();
     if (S.intro >= INTRO.length) goGame(); else renderIntro();
   };
+  if ($('iPrev')) $('iPrev').onclick = () => { S.intro--; save(); renderIntro(); };
   show('intro');
 }
 
@@ -438,6 +443,7 @@ function goLobby() {
   show('lobby');
 }
 $('lGo').onclick = goGame;
+$('lTut').onclick = () => renderIntro(true);
 $('lReset').onclick = () => modal('처음부터?', '진행 상황이 모두 지워져요.', [
   { label:'취소', ghost:true },
   { label:'지우기', fn:() => { S = fresh(); save(); start(); } },
