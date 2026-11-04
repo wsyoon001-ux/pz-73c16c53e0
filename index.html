@@ -191,7 +191,7 @@ const BOARDS_PER_MISSION = 2;
 const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = '1d2fc7c589752df63142b1662d4e3c7c';
+const SALT = 'bb50766fc28aff2fa761fd45506e4f03';
 const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
   'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg' };
 const URLS = {};
@@ -501,7 +501,10 @@ function fanfareSound() {
 // ============================================================
 // 시작
 // ============================================================
+// 개발용 버튼은 숨김. 주소 끝에 ?dev 를 붙이면 보인다 (DEV=false 빌드에선 완전히 제거)
+const SHOW_DEV = DEV && new URLSearchParams(location.search).has('dev');
 if (!DEV) document.querySelectorAll('.dev').forEach(el => el.remove());
+else if (!SHOW_DEV) document.querySelectorAll('.dev').forEach(el => el.style.display = 'none');
 function start() {
   if (S.intro < INTRO.length) renderIntro();
   else if (S.stage < MISSIONS.length) goGame();
@@ -524,6 +527,11 @@ async function unlock(pw) {
   }
 }
 function boot() {
+  // 개발용: ?jump=last → 마지막 판(미션 9 직전 마지막 퍼즐)으로 이동
+  if (DEV && new URLSearchParams(location.search).get('jump') === 'last') {
+    const s = fresh(); s.intro = INTRO.length; s.stage = MISSIONS.length - 1; s.board = BOARDS_PER_MISSION - 1;
+    s.done = Array.from({length:MISSIONS.length - 1}, (_, k) => k); S = s; save(); start(); return;
+  }
   S = load(); start();
 }
 async function tryPw(pw, quiet) {
