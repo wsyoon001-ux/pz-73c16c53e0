@@ -191,7 +191,7 @@ const BOARDS_PER_MISSION = 2;
 const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = '22f65df3ca190f533ce8ae3fecd4aa3c';
+const SALT = '221d273208ffccd6f03a96e9c2ef4660';
 const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
   'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg' };
 const URLS = {};
@@ -223,7 +223,7 @@ const MISSIONS = [
     text:'로또 당첨되면 그것도 내 선물 ❤️',
     money:'5,000', tile:{ emoji:'💸', amt:'5,000원' } },
   { title:'가인 마사지', place:'가인 중국전통마사지\n화성시 능동 1113-6 한솔프라자 3층 303호', phone:'031-613-8895', map:'화성시 능동 1113-6',
-    text:'한 시간동안 뭉친데 풀기!\n4~6시 사이 예약. 출발 전 전화 추천',
+    text:'한 시간동안 뭉친데 풀기!\n출발 전 전화 추천',
     att:[{ src:'img/massage_card_gain.jpg', name:'가인_명함.jpg' }], tile:{ img:'img/massage_card_gain.jpg' } },
   { title:'GS25', place:'GS25 (아무데나)',
     text:'군것질 거리 담기!',
@@ -531,6 +531,12 @@ function boot() {
   if (DEV && new URLSearchParams(location.search).get('jump') === 'last') {
     const s = fresh(); s.intro = INTRO.length; s.stage = MISSIONS.length - 1; s.board = BOARDS_PER_MISSION - 1;
     s.done = Array.from({length:MISSIONS.length - 1}, (_, k) => k); S = s; save(); start(); return;
+  }
+  // 개발용: ?jump=m6 → 미션 6 화면 (1~6 완료 상태)
+  const jm = DEV && /^m(\d)$/.exec(new URLSearchParams(location.search).get('jump') || '');
+  if (jm) {
+    const k = +jm[1] - 1; S = fresh(); S.intro = INTRO.length; S.stage = k + 1;
+    S.done = Array.from({length:k + 1}, (_, i) => i); save(); openMission(k, true); return;
   }
   // 개발용: ?jump=tutorial → 인트로 마지막(튜토리얼) 화면, 진행은 처음 상태
   if (DEV && new URLSearchParams(location.search).get('jump') === 'tutorial') {
