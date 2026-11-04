@@ -48,8 +48,8 @@
   .cell { aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center; position:relative;
     color:#fff; font-weight:900; font-size:min(5.6vw,26px); overflow:hidden; }
   .cell.x::after { content:"✕"; }
-  .cell.face { background-image:var(--face) !important; background-size:cover; background-position:center; animation:pop .35s ease-out; }
-  .cell.face::before { content:""; position:absolute; inset:0; border-radius:6px; box-shadow:inset 0 0 0 3px var(--rc); }
+  .cell.face::after { content:"🐱"; font-size:min(6.4vw,30px); font-weight:400; }
+  .cell.face { animation:pop .35s ease-out; }
   .cell.wrong { animation:shake .4s; background:#d94848 !important; }
   @keyframes pop { 0%{transform:scale(.3)} 70%{transform:scale(1.18)} 100%{transform:scale(1)} }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
@@ -134,14 +134,13 @@
   </div>
   <div class="progress" id="gProg"></div>
   <div class="rules">
-    <div>색깔마다<br>얼굴 1개</div><div>가로·세로마다<br>얼굴 1개</div><div>얼굴끼리<br>붙으면 안 됨</div>
+    <div>색깔마다<br>고양이 1마리</div><div>가로·세로마다<br>고양이 1마리</div><div>고양이끼리<br>붙으면 안 됨</div>
   </div>
   <div class="board" id="board"></div>
   <div class="tools">
-    <button class="ghost" id="gHint">💡 힌트</button>
     <button class="dev" id="gCheat">치트</button>
   </div>
-  <p style="text-align:center;font-size:12px;color:var(--sub);margin:10px 0 0">탭 = ✕ · 두 번 탭 = 얼굴 · 밀면 ✕ 여러 칸</p>
+  <p style="text-align:center;font-size:12px;color:var(--sub);margin:10px 0 0">탭 = ✕ · 두 번 탭 = 고양이 · 밀면 ✕ 여러 칸</p>
 </div>
 
 <!-- 로비 -->
@@ -171,12 +170,12 @@
 // ============================================================
 const DEV = true;
 const LIVES = 3;
-const BOARDS_PER_MISSION = 3;
-const STORE_KEY = 'bday26-state';
+const BOARDS_PER_MISSION = 2;
+const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = '9bbc5842d270a1a41883dac276cf0909';
-const IMGS = { 'img/face.jpg':'image/jpeg', 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
+const SALT = 'e7aa1b99b5f54dccf3b330e39d0a4744';
+const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
   'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg' };
 const URLS = {};
 const img = p => URLS[p] || p;
@@ -260,7 +259,7 @@ function toast(msg, ms = 1000) {
 function renderIntro() {
   const it = INTRO[S.intro];
   $('introCard').innerHTML =
-    (it.face ? `<img class="introFace" src="${img('img/face.jpg')}" alt="">` : '') +
+    (it.face ? '<div style="font-size:64px;margin-bottom:10px">🐱</div>' : '') +
     `<h1>${esc(it.title)}</h1><p class="pre">${esc(it.text)}</p>` +
     (it.small ? `<p class="small">${esc(it.small)}</p>` : '') +
     `<button class="wide" id="iBtn">${esc(it.btn)}</button>`;
@@ -363,14 +362,6 @@ document.addEventListener('dblclick', e => e.preventDefault());
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 $('gBack').onclick = goLobby;
-$('gHint').onclick = () => {
-  if (busy) return;
-  const rows = []; for (let r = 0; r < n; r++) if (S.grid[r * n + P.solution[r]] !== 2) rows.push(r);
-  if (!rows.length) return;
-  const r = rows[Math.floor(Math.random() * rows.length)], i = r * n + P.solution[r];
-  S.grid[i] = 2; renderCell(i); save();
-  if (faces() === n) boardCleared();
-};
 function solveAll() { for (let r = 0; r < n; r++) S.grid[r * n + P.solution[r]] = 2; renderGame(); save(); boardCleared(); }
 $('gCheat').onclick = () => { if (!busy) solveAll(); };
 
@@ -509,7 +500,6 @@ async function unlock(pw) {
   }
 }
 function boot() {
-  document.documentElement.style.setProperty('--face', `url("${img('img/face.jpg')}")`);
   S = load(); start();
 }
 async function tryPw(pw, quiet) {
