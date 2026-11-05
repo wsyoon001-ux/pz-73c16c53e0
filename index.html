@@ -532,7 +532,7 @@ async function unlock(pw) {
   const key = await crypto.subtle.deriveKey({ name:'PBKDF2', salt, iterations:100000, hash:'SHA-256' },
     base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
   for (const [p, mime] of Object.entries(IMGS)) {
-    const buf = await (await fetch(p + '.enc')).arrayBuffer();
+    const buf = await (await fetch(p + '.enc', { cache:'no-store' })).arrayBuffer();
     const plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv:new Uint8Array(buf, 0, 12) }, key, new Uint8Array(buf, 12));
     URLS[p] = URL.createObjectURL(new Blob([plain], { type:mime }));
   }
