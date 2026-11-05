@@ -103,6 +103,9 @@
   .toast.on { opacity:1; transform:translate(-50%,-50%) scale(1); }
   #viewer { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px; z-index:25; }
   #viewer.on { display:flex; }
+  #viewer .wrap { width:100%; max-height:72vh; overflow:auto; -webkit-overflow-scrolling:touch; display:flex; justify-content:center; }
+  #viewer.zoom .wrap { display:block; }
+  #viewer.zoom img { max-width:none; max-height:none; width:250%; }
   #viewer img { max-width:100%; max-height:72vh; border-radius:12px; -webkit-touch-callout:default; -webkit-user-select:auto; user-select:auto; }
   #viewer .row { display:flex; gap:8px; margin-top:14px; width:100%; max-width:360px; }
   #viewer .row button { flex:1; }
@@ -177,7 +180,7 @@
 
 <div class="modal" id="modal"><div class="box"><h3 id="moT"></h3><p id="moB" class="pre"></p><div class="btns" id="moBtns"></div></div></div>
 <div class="toast" id="toast"></div>
-<div id="viewer"><img id="vImg" alt=""><div class="row"><button class="ghost" id="vClose">닫기</button><button id="vSave">사진 저장</button></div><div class="tip">저장이 안 되면 사진을 길게 눌러 "사진 앱에 저장"</div></div>
+<div id="viewer"><div class="wrap" id="vWrap"><img id="vImg" alt=""></div><div class="row"><button class="ghost" id="vClose">닫기</button><button id="vSave">사진 저장</button></div><div class="tip">사진을 누르면 확대 · 다시 누르면 원래대로<br>저장이 안 되면 사진을 길게 눌러 "사진 앱에 저장"</div></div>
 <canvas id="confetti"></canvas>
 
 <script src="puzzles.js"></script>
@@ -191,7 +194,7 @@ const BOARDS_PER_MISSION = 2;
 const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = '3b135109c743dbacd42dd716065d33b7';
+const SALT = '945a417fc18ed1855297d0b4d7b8676e';
 const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
   'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg', 'img/letter_hint.jpg':'image/jpeg' };
 const URLS = {};
@@ -420,8 +423,14 @@ function openMission(m, fresh) {
 function mkBtn(label, cls, fn) { const el = document.createElement('button'); el.textContent = label; el.className = 'wide ' + cls; el.onclick = fn; return el; }
 
 let vCur = null;
-function openViewer(a) { vCur = a; $('vImg').src = img(a.src); $('viewer').classList.add('on'); }
-$('vClose').onclick = () => $('viewer').classList.remove('on');
+function openViewer(a) { vCur = a; $('vImg').src = img(a.src); $('viewer').classList.remove('zoom'); $('viewer').classList.add('on'); }
+$('vClose').onclick = () => $('viewer').classList.remove('on', 'zoom');
+$('vImg').onclick = (e) => {
+  const v = $('viewer'), w = $('vWrap'), r = e.target.getBoundingClientRect();
+  const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+  v.classList.toggle('zoom');
+  if (v.classList.contains('zoom')) { w.scrollLeft = fx * w.scrollWidth - w.clientWidth / 2; w.scrollTop = fy * w.scrollHeight - w.clientHeight / 2; }
+};
 $('vSave').onclick = () => vCur && saveImg(vCur);
 async function saveImg(a) {
   try {
