@@ -191,9 +191,9 @@ const BOARDS_PER_MISSION = 2;
 const STORE_KEY = 'bday26-state-v2';
 // 배포 빌드(build.py)가 ENC=true, SALT를 채워 넣고 사진을 암호화한다. 로컬에선 평문 사진 그대로.
 const ENC = true;
-const SALT = '62899e71be8a15bd7aef47302d72b976';
+const SALT = '3b135109c743dbacd42dd716065d33b7';
 const IMGS = { 'img/gift_oliveyoung_30000.png':'image/png', 'img/gift_oozy_latte.png':'image/png',
-  'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg' };
+  'img/gift_gs25_10000.png':'image/png', 'img/massage_card_gain.jpg':'image/jpeg', 'img/letter_hint.jpg':'image/jpeg' };
 const URLS = {};
 const img = p => URLS[p] || p;
 
@@ -209,7 +209,8 @@ const INTRO = [
 // tile: 로비 칸 그림 (img 또는 emoji), att: 저장 가능한 사진, money: 송금봉투
 const MISSIONS = [
   { title:'숨겨진 편지', place:'손바닥 공원 어딘가', map:'손바닥공원 동탄',
-    text:'꼭 찾아내길 바래!', tile:{ emoji:'✉️' } },
+    text:'꼭 찾아내길 바래!\n(힌트 사진 빨간 동그라미)',
+    att:[{ src:'img/letter_hint.jpg', name:'편지_힌트.jpg' }], tile:{ emoji:'✉️' } },
   { title:'올리브영', place:'올리브영 동탄센트럴파크점\n동탄지성로 102 · 10:00~22:30', map:'올리브영 동탄센트럴파크점',
     text:'갖고 싶은거 사기\n(얼마 안되지만)',
     att:[{ src:'img/gift_oliveyoung_30000.png', name:'올리브영_기프트카드_3만원.png' }], tile:{ img:'img/gift_oliveyoung_30000.png' } },
